@@ -1,6 +1,6 @@
 # Real-Time Chat Backend Documentation
 
-This document describes the backend API and WebSocket configuration for the Real-Time Chat application. It includes information for both REST API endpoints and WebSocket communication so that the frontend team (using Kotlin) can integrate smoothly.
+This document describes the backend API and WebSocket configuration for the Real-Time Chat application. It includes information for  WebSocket communication so that the frontend team (using Kotlin) can integrate smoothly.
 
 ---
 
@@ -11,15 +11,7 @@ This document describes the backend API and WebSocket configuration for the Real
 - [WebSocket Connection](#websocket-connection)
   - [Endpoint URL](#endpoint-url)
   - [Kotlin Example](#kotlin-example)
-- [REST API Endpoints](#rest-api-endpoints)
-  - [User Rooms](#1-display-the-groups-or-rooms-the-user-has-joined)
-  - [Room Members](#2-list-of-members-in-a-particular-group)
-  - [Room Messages (with Pagination)](#3-api-for-displaying-old-messages-of-a-particular-group)
-  - [Room List (All Groups)](#4-api-for-listing-all-groups-not-just-groups-joined-by-the-user)
-- [Error Codes and Responses](#error-codes-and-responses)
 - [Testing Guidelines](#testing-guidelines)
-- [Deployment Notes](#deployment-notes)
-- [Environment Variables](#environment-variables)
 - [Additional Information](#additional-information)
 
 ---
@@ -37,10 +29,8 @@ The backend is built using Django, Django REST Framework, and Django Channels fo
 
 - **Method:** Token-based authentication via Django REST Framework.
 - **Obtaining a Token:**  
-  Use the login API (not detailed here) to obtain a token. The token must be included in both REST API requests (in the `Authorization` header) and WebSocket connections (via query parameter).
+  Use the login API (not detailed here) to obtain a token. The token must be included in both REST API requests (in the `Authorization` header) and WebSocket connections (via query params).
   
-**Example Header for REST requests:**
-Authorization: Token <your-auth-token>
 
 **For WebSocket connections, include the token in the URL:**
 
@@ -55,6 +45,7 @@ The WebSocket endpoint follows this pattern:
 
 - **`<room_name>`:** Use one of the valid room names (e.g., `2nd_year`, `backend_2_3`, etc.).
 - **`<your-auth-token>`:** The token obtained after authenticating via the login API.
+- also after <room_name> in url , then you can put token through params in key value pair key-- `token` and value will be `your auth token` 
 
 ### Kotlin Example
 
@@ -81,7 +72,7 @@ val webSocketListener = object : WebSocketListener() {
     override fun onOpen(webSocket: WebSocket, response: okhttp3.Response) {
         println("Connected to WebSocket")
         // Example: Send a message when connected
-        webSocket.send("""{"message": "Hello, world!", "message_type": "text"}""")
+        webSocket.send("""{"message": "Hello, world!", "message_type": "text"}""")  // you don't need to send message_type as by default we assume it to be text type
     }
 
     override fun onMessage(webSocket: WebSocket, text: String) {
@@ -108,48 +99,7 @@ client.dispatcher.executorService.shutdown()
 ```
 Note: This example uses OkHttp. Adjust as needed if you use a different WebSocket library.
 
-## REST API Endpoints
-1. **Display the Groups or Rooms the User Has Joined**
-  - URL: /api/chat/groups/
-  - Method: GET
-  - Authentication: Token required
-  - Response Example:
 
-```JSON
-    [
-  {
-    "id": 1,
-    "name": "2nd_year",
-    "description": "Room for second-year students",
-    "room_avatar": "https://...",
-    "created_at": "2025-02-13T10:00:00Z",
-    "updated_at": "2025-02-13T10:00:00Z",
-    "members_count": 5
-  },
-  ...
-]
-```
-2. **List of Members in a Particular Group**
-  - URL: /api/chat/groups/<room_name>/members/
-  - Method: GET
-  - Authentication: Token required
-  - Response Example:
-``` JSON
-[
-  {
-    "id": 1,
-    "username": "anagh",
-    "first_name": "Anagh",
-    "last_name": "Singh"
-  },
-  {
-    "id": 2,
-    "username": "john_doe",
-    "first_name": "John",
-    "last_name": "Doe"
-  }
-]
-```
 ## Testing Guidelines
 
 ### WebSocket Testing
@@ -158,20 +108,35 @@ Note: This example uses OkHttp. Adjust as needed if you use a different WebSocke
   - Verify that a WebSocket connection is successfully established when a valid token is provided.
   - Test sending messages over the WebSocket and ensure that messages are correctly received and broadcast to all connected clients.
 
-### REST API Testing
-- **Tools:** Use Postman or any API testing tool to verify all endpoints.
-- **Checklist:**
-  - Ensure each request includes the header:
-    ```
-    Authorization: Token <your-token>
-    ```
-  - Test various endpoints for expected behavior, including:
-    - Accessing endpoints with valid tokens.
-    - Testing edge cases such as accessing a room as a non-member.
-    - Sending invalid parameters and verifying that appropriate error messages are returned.
+### Additional Information
+```
+remember few things- 
+1. when you click on send message button it should trigger the websocket connect option
+2. if successfully connected your message will be sent, and you will receive the following details:-
+if you send this
+{
+    "message": "hello everyone"
+}
 
+you will get --
 
+{
+    "message": "hello everyone", // the message 
+    "sender": {
+        "name": "Anagh", //first name
+        "photo": "http://res.cloudinary.com/dcbla9zbl/image/upload/v1739107362/lwfugihthelebahq8pbz.jpg", //  photo by default null
+        "id": 1, // id of the sender 
+        "role": "member" // role of the sender admin or member
+    }, // sender details
+    "message_type": "text", // message type
+    "id": 43, // id of message
+    "attachment": null, // attachment sending will be done through HTTPS
+    "created_at": "2025-02-15T17:07:32.256110+00:00", // timestamps of the message 
+    "room": "2nd_year" // the message belongs to which room
+}
+3 - only the person which belongs to that group or room can send message in that room
+4 - this way multiple users can simultaneously talk to each other in any group.
+5 - other important info (in real - time only messaging is possible editing and deleting a message is to be done through http request refer to postman documentation for that).
+6 - when you leave that room disconnect from it.
 
-
-
-
+```
