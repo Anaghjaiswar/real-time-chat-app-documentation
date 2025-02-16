@@ -43,7 +43,7 @@ The backend is built using Django, Django REST Framework, and Django Channels fo
 The WebSocket endpoint follows this pattern:
 `ws://csi-backend-wvn0.onrender.com/ws/chat/<room_name>/?token=<your-auth-token>`
 
-- **`<room_name>`:** Use one of the valid room names (e.g., `2nd_year`, `backend_2_3`, etc.).
+- **`<room_id>`:** Use one of the valid room id's (e.g., `5`, `6`, etc.).
 - **`<your-auth-token>`:** The token obtained after authenticating via the login API.
 - also after <room_name> in url , then you can put token through params in key value pair key-- `token` and value will be `your auth token` 
 
@@ -61,8 +61,8 @@ import okio.ByteString
 val client = OkHttpClient()
 
 val token = "934dc28f497f315b24966dbc5c72a9bded24d0e7"
-val roomName = "2nd_year"
-val wsUrl = "ws://csi-backend-wvn0.onrender.com/ws/chat/$roomName/?token=$token"
+val roomId = 5
+val wsUrl = "ws://csi-backend-wvn0.onrender.com/ws/chat/$roomId/?token=$token"
 
 val request = Request.Builder()
     .url(wsUrl)
@@ -299,6 +299,29 @@ a sample response will be
         "status": {},
         "created_at": "2025-02-16T11:52:52.532858+05:30",
         "updated_at": "2025-02-16T11:52:52.532858+05:30",
+        "room": 5,
+        "parent_message": null,
+        "mentions": []
+    },
+    {
+        "id": 59,
+        "sender": {
+            "id": 13,
+            "first_name": "Achal",
+            "last_name": "Visnoi",
+            "role": "member",
+            "photo": null,
+            "year": "2nd"
+        },
+        "attachment": null,
+        "message_type": "text",
+        "content": "hello anagh , how are you? ",
+        "reactions": null,
+        "is_deleted": true,
+        "is_edited": false,
+        "status": {},
+        "created_at": "2025-02-16T11:52:33.758164+05:30",
+        "updated_at": "2025-02-16T11:55:23.556908+05:30",
         "room": 5,
         "parent_message": null,
         "mentions": []
