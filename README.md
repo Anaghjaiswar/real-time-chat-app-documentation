@@ -41,7 +41,7 @@ The backend is built using Django, Django REST Framework, and Django Channels fo
 ### Endpoint URL
 
 The WebSocket endpoint follows this pattern:
-`ws://csi-backend-wvn0.onrender.com/ws/chat/<room_name>/?token=<your-auth-token>`
+`ws://csi-backend-wvn0.onrender.com/ws/chat/<room_id>/?token=<your-auth-token>`
 
 - **`<room_id>`:** Use one of the valid room id's (e.g., `5`, `6`, etc.).
 - **`<your-auth-token>`:** The token obtained after authenticating via the login API.
