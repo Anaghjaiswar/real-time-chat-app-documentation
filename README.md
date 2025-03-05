@@ -13,6 +13,7 @@ This document describes the backend API and WebSocket configuration for the Real
   - [Kotlin Example](#kotlin-example)
 - [Testing Guidelines](#testing-guidelines)
 - [Additional Information](#additional-information)
+- [Typing](#typing-notification)
 
 ---
 
@@ -583,3 +584,187 @@ a sample response will be
     }
 ]
 ```
+
+# Typing Notification
+
+This document provides the details for handling real-time typing notifications via WebSocket in the chat application. It outlines the JSON messages that the frontend should send when a user is typing or stops typing, as well as the expected JSON response from the backend.
+
+---
+
+## Typing Notification Overview
+
+When a user starts typing in a chat room, the frontend should send a specific JSON payload to notify the backend. Similarly, when the user stops typing, another JSON payload is sent. The backend will then broadcast a corresponding message to all connected clients in the room, allowing the UI to display or hide a typing indicator (e.g., "User X is typing...").
+
+---
+
+## JSON Messages
+
+### 1. Sending a "Typing" Event
+
+**When the user starts typing, send:**
+
+```json
+{
+  "action": "typing"
+}
+```
+#### Expected Broadcast Response:
+
+All clients in the room will receive:
+
+```json
+{
+  "action": "typing",
+  "sender": {
+    "name": "UserFirstName",
+    "photo": "http://example.com/photo.jpg",  // May be null if not available
+    "id": 1,
+    "role": "member"  // or "admin"
+  },
+  "is_typing": true
+}
+```
+### 2. Sending a "Stop Typing" Event
+When the user stops typing (or after a short period of inactivity), send:
+
+```json
+{
+  "action": "stop_typing"
+}
+```
+#### Expected Broadcast Response:
+
+All clients in the room will receive:
+```json
+{
+  "action": "typing",
+  "sender": {
+    "name": "UserFirstName",
+    "photo": "http://example.com/photo.jpg",
+    "id": 1,
+    "role": "member"
+  },
+  "is_typing": false
+}
+```
+
+## How It Works
+
+### User Starts Typing:
+
+1. The frontend sends the "typing" event.
+2. The backend receives this event and broadcasts a JSON message to all clients in the room with `"is_typing": true`.
+3. The frontend UI should then display an indicator (e.g., "UserFirstName is typing...").
+
+### User Stops Typing:
+
+1. The frontend sends the "stop_typing" event after detecting inactivity (e.g., after 500ms of no input).
+2. The backend broadcasts a JSON message with `"is_typing": false` to all clients.
+3. The UI should remove or hide the typing indicator accordingly.
+
+## Additional Notes
+
+### Connection Requirement:
+
+Ensure the WebSocket connection is established before sending any typing events.
+
+### Debouncing:
+
+Implement a debounce mechanism on the frontend to prevent excessive sending of typing events. For example, send a "stop_typing" event after 500ms of inactivity.
+
+### Multiple Users:
+
+When multiple users are typing, the backend will broadcast a separate JSON message for each user. The frontend should be capable of displaying multiple typing indicators (e.g., "User1 and User2 are typing...").
+
+---
+
+## Typing  implementation (for achal specially)
+
+When a user starts typing, the frontend sends a WebSocket message with the `typing` action. The backend then broadcasts to all clients in that room, and they update the UI to show a typing indicator (e.g., "User X is typing..."). The same applies when the user stops typing.
+
+### Client-Side Implementation
+--- Sending Typing Events
+Triggering the Event:
+
+When the user begins typing, send a JSON payload to notify the server. When they stop typing, send a stop event.
+
+Example Function:
+```
+import com.google.gson.Gson
+
+val gson = Gson()
+
+fun sendTypingEvent(webSocket: WebSocket, isTyping: Boolean) {
+    val event = mapOf("action" to if (isTyping) "typing" else "stop_typing")
+    val jsonData = gson.toJson(event)
+    webSocket.send(jsonData)
+}
+```
+
+### Debouncing:
+To avoid flooding the server with events, implement debouncing. For example, using Kotlin Coroutines:
+
+```
+import kotlinx.coroutines.*
+
+var typingJob: Job? = null
+
+fun onUserTyping(webSocket: WebSocket) {
+    typingJob?.cancel()
+    // Send the typing event immediately
+    sendTypingEvent(webSocket, true)
+    // Schedule a stop_typing event after 500ms of inactivity
+    typingJob = GlobalScope.launch {
+        delay(500)
+        sendTypingEvent(webSocket, false)
+    }
+}
+```
+
+Integrate onUserTyping into your text input listener so it triggers whenever the user types.
+
+### Receiving Typing Notifications
+Handling the Broadcast:
+In your WebSocket listener's onMessage callback, check for the typing action and update the UI accordingly.
+```
+override fun onMessage(webSocket: WebSocket, text: String) {
+    println("Received: $text")
+    try {
+        val jsonObj = JSONObject(text)
+        if (jsonObj.getString("action") == "typing") {
+            val isTyping = jsonObj.getBoolean("is_typing")
+            val sender = jsonObj.getJSONObject("sender")
+            val senderName = sender.getString("name")
+            if (isTyping) {
+                showTypingIndicator(senderName)
+            } else {
+                hideTypingIndicator(senderName)
+            }
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+```
+### UI Updates:
+showTypingIndicator(senderName: String): Display a UI element (e.g., a TextView) indicating "senderName is typing...".
+hideTypingIndicator(senderName: String): Remove or hide the typing indicator when the user stops typing.
+### Handling Multiple Users:
+If more than one user is typing, combine their names into a single message like "User1, User2 are typing...".
+Testing the Typing Notification
+
+### Verify Debouncing:
+Ensure that the "stop_typing" event is sent only after the user has paused typing for the specified delay (e.g., 500ms).
+UI Verification:
+
+Confirm that the typing indicator appears when a "typing" event is received and disappears when a "stop_typing" event is received.
+
+
+This documentation provides all necessary details for integrating the typing notification feature via WebSocket. Follow these guidelines to ensure that typing events are correctly sent from the frontend and appropriately handled in the UI.
+
+
+
+
+
+
+
