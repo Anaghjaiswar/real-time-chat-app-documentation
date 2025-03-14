@@ -14,6 +14,7 @@ This document describes the backend API and WebSocket configuration for the Real
 - [Testing Guidelines](#testing-guidelines)
 - [Additional Information](#additional-information)
 - [Typing](#typing-notification)
+- [parent-message](#Parent-Message-Functionality)
 
 ---
 
@@ -759,8 +760,108 @@ UI Verification:
 
 Confirm that the typing indicator appears when a "typing" event is received and disappears when a "stop_typing" event is received.
 
+# Parent-Message-Functionality
 
-This documentation provides all necessary details for integrating the typing notification feature via WebSocket. Follow these guidelines to ensure that typing events are correctly sent from the frontend and appropriately handled in the UI.
+This document explains the structure of the parent message functionality and provides details for integrating it on the frontend.
+
+## Overview
+
+When a message is a reply to a parent message, the API will include a `parent_message` field in the response. The `parent_message` contains details about the original message, which the frontend can display appropriately to indicate a reply relationship.
+
+---
+
+## WebSocket Request Format
+When sending a message with a parent message, the WebSocket request should include the following fields:
+
+```json
+{
+    "message": "This is a reply to the standalone message",
+    "message_type": "text",
+    "parent_message_id": 405
+}
+```
+
+## Sample Response
+
+Below is a typical response containing a parent message:
+
+```json
+{
+    "message": "This is a reply to the standalone message",
+    "sender": {
+        "name": "Anagh",
+        "photo": "http://res.cloudinary.com/dcbla9zbl/image/upload/v1741989609/di2dalkevnktrw75hpwk.jpg",
+        "id": 1,
+        "role": "member"
+    },
+    "message_type": "text",
+    "id": 408,
+    "is_self": true,
+    "attachment": null,
+    "created_at": "2025-03-14T22:59:38.073041+00:00",
+    "room": 5,
+    "parent_message": {
+        "id": 405,
+        "content": "This is a standalone message",
+        "sender": {
+            "id": 1,
+            "name": "Anagh",
+            "photo": "http://res.cloudinary.com/dcbla9zbl/image/upload/v1741989609/di2dalkevnktrw75hpwk.jpg"
+        },
+        "created_at": "2025-03-14T22:48:28.285745+00:00"
+    }
+}
+```
+
+---
+
+## Explanation of Fields
+
+### Message-Level Fields
+- **message**: The content of the current message.
+- **sender**: Details about the sender of the current message:
+  - `name`: Name of the sender.
+  - `photo`: URL of the sender's profile picture.
+  - `id`: Unique identifier for the sender.
+  - `role`: Role of the sender (e.g., member, admin).
+- **message_type**: Type of the message (e.g., text, image).
+- **id**: Unique identifier for the current message.
+- **is_self**: Boolean indicating whether the sender is the current logged-in user.
+- **attachment**: URL or file path of any attachment (if applicable).
+- **created_at**: Timestamp of when the message was created.
+- **room**: The ID of the room where the message was sent.
+
+### Parent Message Fields
+- **parent_message**: Present only when the message is a reply to another message. Contains the following fields:
+  - `id`: Unique identifier for the parent message.
+  - `content`: Content of the parent message.
+  - `sender`: Details about the sender of the parent message:
+    - `id`: Unique identifier for the parent message's sender.
+    - `name`: Name of the parent message's sender.
+    - `photo`: URL of the sender's profile picture.
+  - `created_at`: Timestamp of when the parent message was created.
+
+---
+
+## Integration Notes for Frontend
+
+1. **Displaying Replies**:
+   - When a `parent_message` is present, display the `content` and `sender` details of the parent message above or alongside the reply.
+   - Use the `sender.name` and `sender.photo` fields for better user context.
+
+2. **Conditional Rendering**:
+   - Check if `parent_message` exists in the response. If absent, treat the message as a standalone message.
+
+3. **UI Considerations**:
+   - Highlight the parent message slightly differently (e.g., smaller font size, lighter background) to distinguish it from the main message.
+
+4. **Error Handling**:
+   - Ensure the frontend gracefully handles cases where some fields might be `null` (e.g., `attachment`, `parent_message`).
+
+---
+
+Feel free to reach out for additional clarification or support!
+
 
 
 
