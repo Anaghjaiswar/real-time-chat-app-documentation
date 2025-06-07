@@ -15,6 +15,7 @@ This document describes the backend API and WebSocket configuration for the Real
 - [Additional Information](#additional-information)
 - [Typing](#typing-notification)
 - [parent-message](#Parent-Message-Functionality)
+- [Pin Message](#Pin-Unpin-Functionality)
 
 ---
 
@@ -842,6 +843,42 @@ Below is a typical response containing a parent message:
   - `created_at`: Timestamp of when the parent message was created.
 
 ---
+
+## Pin Message
+- **Pin** up to **3** messages per room.  
+- Pins expire **automatically** after **7 days**.  
+- Only the **room members** may pin/unpin.  
+- Pin state is broadcast in real time via Channels.
+
+for pinning you send me 
+```json
+{
+  "action":     "pin_message",
+  "message_id": 123,
+  "pin":        true
+}
+```
+Server broadcasts back:
+```json
+{
+  "action":    "message_pinned",
+  "id":        123,
+  "is_pinned": true,
+  "pinned_at": "2025-06-07T12:34:56.789Z"
+}
+```
+to unpin 
+send 
+```json
+{
+  "action":     "pin_message",
+  "message_id": 123,
+  "pin":        false
+}
+```
+
+
+
 
 ## Integration Notes for Frontend
 
